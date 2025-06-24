@@ -218,28 +218,156 @@ engine = create_engine('sqlite:///census_data.db')
 # Streamlit App Title
 st.title("Census Data Standardization And Analysis")
 # Define Queries in a Dictionary
+
 queries = {
-    "Total Population of Each District": "SELECT District, SUM(Population) AS total_population FROM census_data GROUP BY District",
-    "Literate Males and Females in Each District": "SELECT District, SUM(literate_male) AS literate_males, SUM(literate_female) AS literate_females FROM census_data GROUP BY District",
-    "Percentage of Workers (Male & Female) in Each District": "SELECT District,SUM(Male_Workers) AS Total_Male_Workers,SUM(Female_Workers) AS Total_Female_Workers,SUM(Population) AS Total_Population,ROUND(SUM(Male_Workers) * 100.0 / SUM(Population), 2) AS Male_Workers_Percentage,ROUND(SUM(Female_Workers) * 100.0 / SUM(Population), 2) AS Female_Workers_Percentage FROM census_data GROUP BY District ORDER BY District",
-    "Households with LPG/PNG as Cooking Fuel": "SELECT District, SUM(LPG_or_PNG_Households) AS lpg_png_households FROM census_data GROUP BY District",
-    "Religious Composition of Each District": "SELECT District,SUM(Hindus) AS Total_Hindus,SUM(Muslims) AS Total_Muslims,SUM(Christians) AS Total_Christians,SUM(Sikhs) AS Total_Sikhs,SUM(Buddhists) AS Total_Buddhists,SUM(Jains) AS Total_Jains,SUM(Others_Religions) AS Total_Others,SUM(Religion_Not_Stated) AS Total_Not_Stated,SUM(Hindus + Muslims + Christians + Sikhs + Buddhists + Jains + Others_Religions + Religion_Not_Stated) AS Total_Population FROM census_data GROUP BY District ORDER BY District",
-    "Households with internet access in each district": "SELECT District, SUM(Households_with_Internet) AS internet_access FROM census_data GROUP BY District",
-    "Educational attainment distribution":"SELECT District, Total_Education, COUNT(*) AS count FROM census_data GROUP BY District, Total_Education",
-    "Access to transport and appliances":"SELECT District,SUM(Bicycle) AS Bicycles,SUM(Car_Jeep_Van) AS Cars,SUM(Radio_Transistor) AS Radios,SUM(Television) AS Televisions FROM census_2011 GROUP BY District",
-    "Condition of census houses":"SELECT District,SUM(Dilapidated) AS Dilapidated_Houses,SUM(Separate_Kitchen) AS With_Separate_Kitchen,SUM(Bathing_Facility) AS With_Bathing_Facility,SUM(Latrine_Facility) AS With_Latrine_Facility FROM census_2011 GROUP BY District",
-    "Households below poverty line":"SELECT State_UT,SUM(Households_Below_Poverty_Line) AS Below_Poverty_Line FROM census_2011 GROUP BY State_UT",
-    "Overall literacy rate in each state":"SELECT State_UT,ROUND(SUM(Literate) * 100.0 / SUM(Population), 2) AS Literacy_Rate_Percent FROM census_2011 GROUP BY State_UT",
-    "Percentage of married couples by household size":"SELECT State_UT,ROUND(SUM(Married_1_2_Persons) * 100.0 / SUM(Married_Couples_Total), 2) AS Size_1_2,ROUND(SUM(Married_3_5_Persons) * 100.0 / SUM(Married_Couples_Total), 2) AS Size_3_5,ROUND(SUM(Married_6Plus_Persons) * 100.0 / SUM(Married_Couples_Total), 2) AS Size_6Plus FROM census_2011 GROUP BY State_UT",
-    "Household income distribution":"SELECT State_UT,SUM(Income_Low) AS Low_Income,SUM(Income_Middle) AS Middle_Income,SUM(Income_High) AS High_Income FROM census_2011 GROUP BY State_UT",
-    "Household size distribution":"SELECT District,SUM(Size_1_Person) AS One_Person,SUM(Size_2_Persons) AS Two_Persons,SUM(Size_3_5_Persons) AS ThreeToFive,SUM(Size_6_8_Persons) AS SixToEight,SUM(Size_9_Plus_Persons) AS NinePlus FROM census_2011 GROUP BY District",
-    "Total number of households per state":"SELECT State_UT, SUM(Households) AS Total_Households FROM census_2011 GROUP BY State_UT",
-    "Households with latrine facility in each state":"SELECT State_UT, SUM(Latrine_Facility) AS Households_With_Latrine FROM census_2011 GROUP BY State_UT",
-    "Average household size in each state":"SELECT State_UT,ROUND(SUM(Population) / SUM(Households), 2) AS Avg_Household_Size FROM census_2011 GROUP BY State_UT",
-    "Owned vs rented households":"SELECT State_UT,SUM(House_Owned) AS Owned,SUM(House_Rented) AS Rented FROM census_2011 GROUP BY State_UT",
-    "Latrine types distribution":"SELECT State_UT,SUM(Pit_Latrine) AS Pit_Latrine,SUM(Flush_Latrine) AS Flush_Latrine,SUM(Other_Latrine) AS Other_Types FROM census_2011 GROUP BY State_UT",
-    "Drinking water near premises":"SELECT State_UT,SUM(Drinking_Water_Near_Premises) AS Drinking_Water_Access FROM census_2011 GROUP BY State_UT"
-}  
+    "Total population of each district": 
+        "SELECT District, `State/UT`, Population FROM census_data ORDER BY Population DESC",
+
+    "Literate males and females in each district": 
+        "SELECT District, Literate_Male, Literate_Female FROM census_data",
+
+    "Percentage of workers (both male and female) in each district": 
+        """
+        SELECT District, 
+               ROUND((CAST(Male_Workers + Female_Workers AS FLOAT) * 100.0 / Population), 2) AS Worker_Percentage 
+        FROM census_data
+        """,
+
+    "Households with LPG/PNG in each district": 
+        "SELECT District, LPG_or_PNG_Households FROM census_data",
+
+    "Religious composition of each district": 
+        """
+        SELECT District, Hindus, Muslims, Christians, Sikhs, Buddhists, Jains, 
+               Others_Religions, Religion_Not_Stated  
+        FROM census_data
+        """,
+
+    "Households with internet access in each district": 
+        "SELECT District, Households_with_Internet FROM census_data",
+
+    "Educational attainment distribution in each district": 
+        """
+        SELECT District, Below_Primary_Education, Primary_Education, Middle_Education, 
+               Secondary_Education, Higher_Education, Graduate_Education, Other_Education 
+        FROM census_data
+        """,
+
+    "Households with transportation access in each district": 
+        """
+        SELECT District, Households_with_Bicycle, Households_with_Car_Jeep_Van, 
+               Households_with_Radio_Transistor, Households_with_Scooter_Motorcycle_Moped 
+        FROM census_data
+        """,
+
+    "Condition of census houses in each district": 
+        """
+        SELECT District, 
+               Condition_of_occupied_census_houses_Dilapidated_Households, 
+               Households_with_separate_kitchen_Cooking_inside_house, 
+               Having_bathing_facility_Total_Households, 
+               Having_latrine_facility_within_the_premises_Total_Households 
+        FROM census_data
+        """,
+
+    "Household size distribution in each district": 
+        """
+        SELECT District, 
+               Household_size_1_person_Households, 
+               Household_size_2_persons_Households, 
+               Household_size_3_to_5_persons_Households, 
+               Household_size_6_8_persons_Households, 
+               Household_size_9_persons_and_above_Households 
+        FROM census_data
+        """,
+
+    "Total number of households in each state": 
+        """
+        SELECT `State/UT`, SUM(Households) AS Total_Households 
+        FROM census_data 
+        GROUP BY `State/UT`
+        """,
+
+    "Households with latrine within premises (statewise)": 
+        """
+        SELECT `State/UT`, 
+               SUM(Having_latrine_facility_within_the_premises_Total_Households) AS Latrine_Within 
+        FROM census_data 
+        GROUP BY `State/UT`
+        """,
+
+    "Average household size per state": 
+        """
+        SELECT `State/UT`, 
+               ROUND(SUM(Population) * 1.0 / SUM(Households), 2) AS Avg_Household_Size 
+        FROM census_data 
+        GROUP BY `State/UT`
+        """,
+
+    "Owned vs Rented households (statewise)": 
+        """
+        SELECT `State/UT`, 
+               SUM(Ownership_Owned_Households) AS Owned, 
+               SUM(Ownership_Rented_Households) AS Rented 
+        FROM census_data 
+        GROUP BY `State/UT`
+        """,
+
+    "Latrine facility type distribution (statewise)": 
+        """
+        SELECT `State/UT`, 
+               SUM(Type_of_latrine_facility_Pit_latrine_Households) AS Pit_Latrine, 
+               SUM(Type_of_latrine_facility_Flush_pour_flush_latrine_connected_to_other_system_Households) AS Flush_Latrine 
+        FROM census_data 
+        GROUP BY `State/UT`
+        """,
+
+    "Households with drinking water near premises (statewise)": 
+        """
+        SELECT `State/UT`, 
+               SUM(Location_of_drinking_water_source_Near_the_premises_Households) AS Near_Premises 
+        FROM census_data 
+        GROUP BY `State/UT`
+        """,
+
+    "Power parity (income) distribution per state": 
+        """
+        SELECT `State/UT`, 
+               SUM(Power_Parity_Less_than_Rs_45000) AS '<45K', 
+               SUM(Power_Parity_Rs_45000_90000) AS '45K-90K', 
+               SUM(Power_Parity_Rs_90000_150000) AS '90K-150K', 
+               SUM(Power_Parity_Rs_150000_330000) AS '150K-330K', 
+               SUM(Power_Parity_Above_Rs_545000) AS '>545K' 
+        FROM census_data 
+        GROUP BY `State/UT`
+        """,
+
+    "Married couples by household size (statewise)": 
+        """
+        SELECT `State/UT`, 
+               SUM(Married_couples_1_Households) AS Couple1, 
+               SUM(Married_couples_2_Households) AS Couple2, 
+               SUM(Married_couples_3_Households) AS Couple3 
+        FROM census_data 
+        GROUP BY `State/UT`
+        """,
+
+    "Households below poverty line (approx - less than Rs 45000)": 
+        """
+        SELECT `State/UT`, 
+               SUM(Power_Parity_Less_than_Rs_45000) AS Below_Poverty 
+        FROM census_data 
+        GROUP BY `State/UT`
+        """,
+
+    "Literacy rate per state": 
+        """
+        SELECT `State/UT`, 
+               ROUND(SUM(Literate) * 100.0 / SUM(Population), 2) AS Literacy_Rate 
+        FROM census_data 
+        GROUP BY `State/UT`
+        """
+}
 
 # Dropdown to Select Query
 query_name = st.selectbox("Select Query", list(queries.keys()))
