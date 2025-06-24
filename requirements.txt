@@ -1,3 +1,15 @@
-streamlit
+# Core Data Processing
 pandas
+
+# For SQL database (SQLite)
+sqlalchemy
+
+# For MongoDB integration
 pymongo
+
+# For secure connection string encoding
+dnspython
+urllib3
+
+# Streamlit for UI
+streamlit
